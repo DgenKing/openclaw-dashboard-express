@@ -1,0 +1,9 @@
+export const CONFIG = {
+  PORT: 3000,
+  OPENCLAW_WS: 'ws://127.0.0.1:18789',
+  OPENCLAW_TOKEN: '',
+  DASHBOARD_TOKEN: 'change-me-in-production',
+  MAX_ACTIVITY_LOG: 500,
+  WS_RECONNECT_BASE_MS: 1000,
+  WS_RECONNECT_MAX_MS: 30000,
+} as const
