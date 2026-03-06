@@ -2,26 +2,37 @@
 
 Real-time monitoring dashboard for OpenClaw agent orchestration. Built with Bun, React 19, and TypeScript.
 
-## Installation
+## Quick Start
 
 ```bash
-# Clone the repo
+# Clone and install
 git clone https://github.com/your-org/dashboard-express.git
 cd dashboard-express
-
-# Install dependencies
 bun install
 
-# Start the server
+# Start the dashboard
 bun run dev
 ```
 
 Dashboard runs at **http://localhost:3000**
 
-## Requirements
+## Without OpenClaw (Testing)
 
-- [Bun](https://bun.sh) runtime
-- OpenClaw Gateway running on `ws://127.0.0.1:18789` (optional for dev)
+Use the built-in mock gateway to test the dashboard without OpenClaw:
+
+```bash
+# Terminal 1: Start mock OpenClaw (simulates 8 agents)
+bun mock-gateway.ts
+
+# Terminal 2: Start dashboard
+bun run dev
+```
+
+The mock gateway simulates live agent activity with status changes every 3-8 seconds.
+
+## With OpenClaw
+
+If OpenClaw is running on `ws://127.0.0.1:18789`, the dashboard will connect automatically.
 
 ## Features
 
@@ -35,15 +46,9 @@ Dashboard runs at **http://localhost:3000**
 - Lead pipeline
 - Settings
 
-## Integration with OpenClaw
+## Requirements
 
-Run on port 3000 alongside OpenClaw (port 18789):
-
-```bash
-bun run dev
-```
-
-Access at: http://localhost:3000
+- [Bun](https://bun.sh) runtime
 
 ## License
 
