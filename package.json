@@ -1,10 +1,12 @@
 {
-  "name": "openclaw-mission-control",
+  "name": "dashboard-express",
   "version": "1.0.0",
+  "description": "Real-time monitoring dashboard for OpenClaw agent orchestration",
   "type": "module",
   "scripts": {
     "dev": "bun run server.ts",
-    "start": "bun run server.ts"
+    "start": "bun run server.ts",
+    "build": "bun build client.tsx --outdir=dist --target=browser"
   },
   "dependencies": {
     "@react-three/drei": "^10.0.0",
