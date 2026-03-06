@@ -1,6 +1,14 @@
 import React, { useState, useEffect, useReducer, createContext, useContext } from 'react'
 import { createRoot } from 'react-dom/client'
-import { LayoutDashboard, Bot, ListTodo, FileText, Building2, Coins, Clock, Brain, File, Share2, Target, Settings } from 'lucide-react'
+import {
+  LayoutDashboard, Bot, ListTodo, FileText, Building2, Coins, Clock, Brain, File, Share2, Target, Settings,
+  Cpu,
+  Users, UserCheck, ArrowDownToLine, ArrowUpFromLine, CheckCircle2, Zap, Activity, Wifi, WifiOff,
+  Inbox, Search,
+  TrendingUp,
+  Circle, CircleDot,
+  AlertTriangle, Loader, Loader2,
+} from 'lucide-react'
 import type { Agent, TaskEntry, ActivityEntry, DashboardStats } from './types/openclaw'
 import type { ServerEvent } from './types/ws'
 import type { CostStats } from './types/costs'
@@ -128,39 +136,81 @@ function useWebSocket() {
   }, [dispatch])
 }
 
-// Components
+// --- Shared UI primitives ---
+
+function PageHeader({ icon: Icon, title }: { icon: React.ElementType; title: string }) {
+  return (
+    <div className="page-header fade-in">
+      <div className="page-header-icon">
+        <Icon size={20} />
+      </div>
+      <h2 className="page-header-title">{title}</h2>
+    </div>
+  )
+}
+
+function SuspenseFallback() {
+  return (
+    <div className="suspense-fallback">
+      <Loader2 size={28} className="spin" />
+      <span>Loading...</span>
+    </div>
+  )
+}
+
+// --- Components ---
+
 function Sidebar({ active, onNavigate }: { active: string; onNavigate: (v: string) => void }) {
-  const navItems = [
+  const coreItems = [
     { id: 'overview', label: 'Overview', Icon: LayoutDashboard },
     { id: 'agents', label: 'Agents', Icon: Bot },
     { id: 'tasks', label: 'Tasks', Icon: ListTodo },
     { id: 'activity', label: 'Activity', Icon: FileText },
     { id: 'office', label: '2D Office', Icon: Building2 },
+  ]
+
+  const tier1Items = [
     { id: 'costs', label: 'Costs', Icon: Coins },
     { id: 'crons', label: 'Crons', Icon: Clock },
     { id: 'memory', label: 'Memory', Icon: Brain },
     { id: 'docs', label: 'Docs', Icon: File },
+  ]
+
+  const tier2Items = [
     { id: 'social', label: 'Social', Icon: Share2 },
     { id: 'leads', label: 'Leads', Icon: Target },
     { id: 'settings', label: 'Settings', Icon: Settings },
   ]
 
-  return (
-    <div className="sidebar">
-      <div className="sidebar-header">
-        <h1>Dashboard Express</h1>
-      </div>
-      <nav className="sidebar-nav">
-        {navItems.map((item) => (
+  function NavGroup({ items }: { items: typeof coreItems }) {
+    return (
+      <>
+        {items.map((item) => (
           <div
             key={item.id}
             className={`nav-item ${active === item.id ? 'active' : ''}`}
             onClick={() => onNavigate(item.id)}
           >
-            <item.Icon className="nav-icon" size={20} />
+            <item.Icon className="nav-icon" size={18} />
             <span>{item.label}</span>
           </div>
         ))}
+      </>
+    )
+  }
+
+  return (
+    <div className="sidebar">
+      <div className="sidebar-header">
+        <Cpu size={18} className="sidebar-header-icon" />
+        <h1>Dashboard Express</h1>
+      </div>
+      <nav className="sidebar-nav">
+        <NavGroup items={coreItems} />
+        <div className="nav-divider" />
+        <NavGroup items={tier1Items} />
+        <div className="nav-divider" />
+        <NavGroup items={tier2Items} />
       </nav>
     </div>
   )
@@ -168,9 +218,36 @@ function Sidebar({ active, onNavigate }: { active: string; onNavigate: (v: strin
 
 function ConnectionStatus({ connected }: { connected: boolean }) {
   return (
-    <div className="connection-status">
-      <span className={`connection-dot ${connected ? '' : 'disconnected'}`} />
+    <div className={`connection-status ${connected ? 'connected' : 'disconnected'}`}>
+      {connected
+        ? <Wifi size={14} className="connection-icon" />
+        : <WifiOff size={14} className="connection-icon" />
+      }
       <span>{connected ? 'Connected' : 'Disconnected'}</span>
+    </div>
+  )
+}
+
+// --- Overview ---
+
+function StatCard({
+  label,
+  value,
+  colorClass,
+  Icon,
+}: {
+  label: string
+  value: string | number
+  colorClass: string
+  Icon: React.ElementType
+}) {
+  return (
+    <div className="stat-card">
+      <div className={`stat-card-icon-bg ${colorClass}`}>
+        <Icon size={16} />
+      </div>
+      <div className="stat-card-label">{label}</div>
+      <div className={`stat-card-value ${colorClass}`}>{value}</div>
     </div>
   )
 }
@@ -179,28 +256,45 @@ function Overview() {
   const state = useContext(StateContext)
 
   return (
-    <div>
-      <h2 className="section-title">Overview</h2>
+    <div className="fade-in">
+      <PageHeader icon={LayoutDashboard} title="Overview" />
       <div className="stats-grid">
-        <div className="stat-card">
-          <div className="stat-card-label">Total Agents</div>
-          <div className="stat-card-value blue">{state.stats.totalAgents}</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-card-label">Active Agents</div>
-          <div className="stat-card-value green">{state.stats.activeAgents}</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-card-label">Tokens In (24h)</div>
-          <div className="stat-card-value purple">{state.stats.totalTokensIn.toLocaleString()}</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-card-label">Tokens Out (24h)</div>
-          <div className="stat-card-value yellow">{state.stats.totalTokensOut.toLocaleString()}</div>
-        </div>
+        <StatCard
+          label="Total Agents"
+          value={state.stats.totalAgents}
+          colorClass="blue"
+          Icon={Users}
+        />
+        <StatCard
+          label="Active Agents"
+          value={state.stats.activeAgents}
+          colorClass="green"
+          Icon={UserCheck}
+        />
+        <StatCard
+          label="Tokens In (24h)"
+          value={state.stats.totalTokensIn.toLocaleString()}
+          colorClass="purple"
+          Icon={ArrowDownToLine}
+        />
+        <StatCard
+          label="Tokens Out (24h)"
+          value={state.stats.totalTokensOut.toLocaleString()}
+          colorClass="yellow"
+          Icon={ArrowUpFromLine}
+        />
+        <StatCard
+          label="Tasks Completed (24h)"
+          value={state.stats.tasksCompleted24h}
+          colorClass="teal"
+          Icon={CheckCircle2}
+        />
       </div>
 
-      <h3 className="section-title">Cost Distribution</h3>
+      <div className="section-subheader">
+        <TrendingUp size={16} />
+        <h3 className="section-subtitle">Cost Distribution</h3>
+      </div>
       <CostTracker />
     </div>
   )
@@ -214,30 +308,51 @@ function CostTracker() {
 
   return (
     <div className="cost-chart">
-      <div style={{ display: 'flex', gap: '24px', marginBottom: '16px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ width: '12px', height: '12px', background: '#3b82f6', borderRadius: '2px' }} />
-          <span style={{ fontSize: '0.875rem' }}>Input: {state.stats.totalTokensIn.toLocaleString()}</span>
+      <div className="cost-chart-legend">
+        <div className="cost-legend-item">
+          <span className="cost-legend-dot blue" />
+          <span className="cost-legend-label">Input: {state.stats.totalTokensIn.toLocaleString()}</span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ width: '12px', height: '12px', background: '#eab308', borderRadius: '2px' }} />
-          <span style={{ fontSize: '0.875rem' }}>Output: {state.stats.totalTokensOut.toLocaleString()}</span>
+        <div className="cost-legend-item">
+          <span className="cost-legend-dot yellow" />
+          <span className="cost-legend-label">Output: {state.stats.totalTokensOut.toLocaleString()}</span>
         </div>
       </div>
-      <div style={{ height: '120px', display: 'flex', alignItems: 'flex-end', gap: '8px' }}>
-        <div style={{ height: `${inPct}%`, flex: 1, background: '#3b82f6', borderRadius: '4px 4px 0 0', minHeight: '4px' }} />
-        <div style={{ height: `${outPct}%`, flex: 1, background: '#eab308', borderRadius: '4px 4px 0 0', minHeight: '4px' }} />
+      <div className="cost-chart-bars">
+        <div className="cost-bar blue" style={{ height: `${inPct}%` }} />
+        <div className="cost-bar yellow" style={{ height: `${outPct}%` }} />
       </div>
     </div>
   )
 }
 
+// --- Agent List ---
+
 function AgentList() {
   const state = useContext(StateContext)
+  const [query, setQuery] = useState('')
+
+  const filtered = state.agents.filter((a) =>
+    a.name.toLowerCase().includes(query.toLowerCase())
+  )
 
   return (
-    <div>
-      <h2 className="section-title">Agents</h2>
+    <div className="fade-in">
+      <PageHeader icon={Bot} title="Agents" />
+
+      <div className="table-toolbar">
+        <div className="search-bar">
+          <Search size={15} className="search-icon" />
+          <input
+            className="search-input"
+            type="text"
+            placeholder="Filter agents..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </div>
+      </div>
+
       <table className="agent-table">
         <thead>
           <tr>
@@ -249,23 +364,32 @@ function AgentList() {
           </tr>
         </thead>
         <tbody>
-          {state.agents.length === 0 ? (
+          {filtered.length === 0 ? (
             <tr>
-              <td colSpan={5} style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>
-                No agents connected
+              <td colSpan={5}>
+                <div className="empty-state">
+                  <Bot size={36} className="empty-state-icon" />
+                  <div className="empty-state-title">No agents connected</div>
+                  <div className="empty-state-sub">Agents will appear here once they connect via WebSocket.</div>
+                </div>
               </td>
             </tr>
           ) : (
-            state.agents.map((agent) => (
+            filtered.map((agent) => (
               <tr key={agent.id}>
-                <td>{agent.name}</td>
+                <td>
+                  <div className="agent-name-cell">
+                    <Bot size={14} className="agent-row-icon" />
+                    <span>{agent.name}</span>
+                  </div>
+                </td>
                 <td>
                   <span className={`status-badge ${agent.status}`}>
-                    <span className="status-dot" />
+                    <CircleDot size={11} className="status-dot-icon" />
                     {agent.status}
                   </span>
                 </td>
-                <td>{agent.currentTask || '-'}</td>
+                <td>{agent.currentTask || <span className="muted">—</span>}</td>
                 <td>{new Date(agent.lastActive).toLocaleString()}</td>
                 <td>{(agent.tokenUsage.input + agent.tokenUsage.output).toLocaleString()}</td>
               </tr>
@@ -277,34 +401,59 @@ function AgentList() {
   )
 }
 
+// --- Task Board ---
+
+const COLUMN_META: Record<
+  TaskEntry['status'],
+  { label: string; Icon: React.ElementType; colorClass: string }
+> = {
+  pending: { label: 'Pending', Icon: Clock, colorClass: 'yellow' },
+  running: { label: 'Running', Icon: Loader, colorClass: 'blue' },
+  completed: { label: 'Completed', Icon: CheckCircle2, colorClass: 'green' },
+  failed: { label: 'Failed', Icon: AlertTriangle, colorClass: 'red' },
+}
+
 function TaskBoard() {
   const state = useContext(StateContext)
-  const columns: Array<{ status: TaskEntry['status']; label: string }> = [
-    { status: 'pending', label: 'Pending' },
-    { status: 'running', label: 'Running' },
-    { status: 'completed', label: 'Completed' },
-    { status: 'failed', label: 'Failed' },
+  const columns: Array<{ status: TaskEntry['status'] }> = [
+    { status: 'pending' },
+    { status: 'running' },
+    { status: 'completed' },
+    { status: 'failed' },
   ]
 
   return (
-    <div>
-      <h2 className="section-title">Task Board</h2>
+    <div className="fade-in">
+      <PageHeader icon={ListTodo} title="Task Board" />
       <div className="task-board">
         {columns.map((col) => {
           const tasks = state.tasks.filter((t) => t.status === col.status)
+          const meta = COLUMN_META[col.status]
           return (
             <div key={col.status} className={`task-column ${col.status}`}>
               <div className="task-column-header">
-                {col.label} ({tasks.length})
+                <meta.Icon size={14} className={`task-col-icon ${meta.colorClass}`} />
+                <span>{meta.label}</span>
+                <span className="task-column-count">{tasks.length}</span>
               </div>
-              {tasks.map((task) => (
-                <div key={task.id} className="task-card">
-                  <div className="task-card-title">{task.title}</div>
-                  <div className="task-card-agent">
-                    Agent: {state.agents.find((a) => a.id === task.agentId)?.name || task.agentId}
-                  </div>
+              {tasks.length === 0 ? (
+                <div className="task-column-empty">
+                  <Circle size={18} className="task-column-empty-icon" />
+                  <span>Nothing here</span>
                 </div>
-              ))}
+              ) : (
+                tasks.map((task) => (
+                  <div key={task.id} className="task-card">
+                    <div className="task-card-header">
+                      <meta.Icon size={12} className={`task-card-icon ${meta.colorClass}`} />
+                      <div className="task-card-title">{task.title}</div>
+                    </div>
+                    <div className="task-card-agent">
+                      {state.agents.find((a) => a.id === task.agentId)?.name || task.agentId}
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           )
         })}
@@ -313,18 +462,25 @@ function TaskBoard() {
   )
 }
 
+// --- Activity Feed ---
+
 function ActivityFeed() {
   const state = useContext(StateContext)
 
   return (
-    <div>
-      <h2 className="section-title">Activity Feed</h2>
+    <div className="fade-in">
+      <PageHeader icon={Activity} title="Activity Feed" />
       <div className="activity-feed">
         {state.activity.length === 0 ? (
-          <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>No activity yet</div>
+          <div className="empty-state">
+            <Inbox size={36} className="empty-state-icon" />
+            <div className="empty-state-title">No activity yet</div>
+            <div className="empty-state-sub">Events will stream here in real time.</div>
+          </div>
         ) : (
           state.activity.map((entry) => (
             <div key={entry.id} className="activity-item">
+              <Activity size={13} className="activity-item-icon" />
               <span className="activity-time">{new Date(entry.timestamp).toLocaleTimeString()}</span>
               <span className="activity-message">{entry.message}</span>
             </div>
@@ -335,7 +491,7 @@ function ActivityFeed() {
   )
 }
 
-// Lazy load components
+// --- Lazy-loaded pages ---
 const Office3D = React.lazy(() => import('./components/Office3D').then(m => ({ default: m.Office3D })))
 const Costs = React.lazy(() => import('./components/Costs').then(m => ({ default: m.Costs })))
 const Crons = React.lazy(() => import('./components/Crons').then(m => ({ default: m.Crons })))
@@ -343,19 +499,21 @@ const Memory = React.lazy(() => import('./components/Memory').then(m => ({ defau
 const Docs = React.lazy(() => import('./components/Docs').then(m => ({ default: m.Docs })))
 const Social = React.lazy(() => import('./components/Social').then(m => ({ default: m.Social })))
 const Leads = React.lazy(() => import('./components/Leads').then(m => ({ default: m.Leads })))
-const Settings = React.lazy(() => import('./components/Settings').then(m => ({ default: m.Settings })))
+const SettingsPage = React.lazy(() => import('./components/Settings').then(m => ({ default: m.Settings })))
 
 function Office() {
   const state = useContext(StateContext)
   return (
-    <div>
-      <h2 className="section-title">Office</h2>
-      <React.Suspense fallback={<div className="loading">Loading...</div>}>
+    <div className="fade-in">
+      <PageHeader icon={Building2} title="Office" />
+      <React.Suspense fallback={<SuspenseFallback />}>
         <Office3D agents={state.agents} />
       </React.Suspense>
     </div>
   )
 }
+
+// --- Dashboard shell ---
 
 function Dashboard() {
   const [active, setActive] = useState('overview')
@@ -371,13 +529,13 @@ function Dashboard() {
         {active === 'tasks' && <TaskBoard />}
         {active === 'activity' && <ActivityFeed />}
         {active === 'office' && <Office />}
-        {active === 'costs' && <React.Suspense fallback={<div className="loading">Loading...</div>}><Costs /></React.Suspense>}
-        {active === 'crons' && <React.Suspense fallback={<div className="loading">Loading...</div>}><Crons /></React.Suspense>}
-        {active === 'memory' && <React.Suspense fallback={<div className="loading">Loading...</div>}><Memory /></React.Suspense>}
-        {active === 'docs' && <React.Suspense fallback={<div className="loading">Loading...</div>}><Docs /></React.Suspense>}
-        {active === 'social' && <React.Suspense fallback={<div className="loading">Loading...</div>}><Social /></React.Suspense>}
-        {active === 'leads' && <React.Suspense fallback={<div className="loading">Loading...</div>}><Leads /></React.Suspense>}
-        {active === 'settings' && <React.Suspense fallback={<div className="loading">Loading...</div>}><Settings /></React.Suspense>}
+        {active === 'costs' && <React.Suspense fallback={<SuspenseFallback />}><Costs /></React.Suspense>}
+        {active === 'crons' && <React.Suspense fallback={<SuspenseFallback />}><Crons /></React.Suspense>}
+        {active === 'memory' && <React.Suspense fallback={<SuspenseFallback />}><Memory /></React.Suspense>}
+        {active === 'docs' && <React.Suspense fallback={<SuspenseFallback />}><Docs /></React.Suspense>}
+        {active === 'social' && <React.Suspense fallback={<SuspenseFallback />}><Social /></React.Suspense>}
+        {active === 'leads' && <React.Suspense fallback={<SuspenseFallback />}><Leads /></React.Suspense>}
+        {active === 'settings' && <React.Suspense fallback={<SuspenseFallback />}><SettingsPage /></React.Suspense>}
       </main>
     </>
   )
