@@ -1,11 +1,14 @@
-import * as readline from 'readline'
-
 let token = process.env.OPENCLAW_TOKEN || ''
 
-// Prompt for token if not set
-async function promptForToken() {
+// Prompt for token only if stdin is a TTY (interactive mode)
+async function promptForToken(): Promise<string> {
   if (token) return token
+  if (!process.stdin.isTTY) {
+    console.log('\n⚠️  No token set. Set OPENCLAW_TOKEN env var: export OPENCLAW_TOKEN=your-token')
+    return ''
+  }
 
+  const readline = await import('readline')
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout
@@ -20,8 +23,10 @@ async function promptForToken() {
   })
 }
 
-// Run prompt before server starts
-await promptForToken()
+// Run prompt before server starts (only in interactive mode)
+if (process.stdin.isTTY) {
+  await promptForToken()
+}
 
 export const CONFIG = {
   PORT: 3000,
