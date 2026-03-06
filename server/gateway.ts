@@ -88,7 +88,8 @@ export function connect() {
   if (ws?.readyState === WebSocket.OPEN) return
 
   console.log(`[Gateway] Connecting to ${CONFIG.OPENCLAW_WS}...`)
-  ws = new WebSocket(CONFIG.OPENCLAW_WS)
+  const wsUrl = CONFIG.OPENCLAW_TOKEN ? `${CONFIG.OPENCLAW_WS}?token=${CONFIG.OPENCLAW_TOKEN}` : CONFIG.OPENCLAW_WS
+  ws = new WebSocket(wsUrl)
 
   ws.onopen = () => {
     console.log('[Gateway] Connected')
