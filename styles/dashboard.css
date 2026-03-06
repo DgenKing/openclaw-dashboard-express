@@ -81,6 +81,7 @@ body {
 }
 
 .nav-icon {
+  color: currentColor;
   width: 20px;
   height: 20px;
 }

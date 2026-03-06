@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useReducer, createContext, useContext } from 'react'
 import { createRoot } from 'react-dom/client'
+import { LayoutDashboard, Bot, ListTodo, FileText, Building2, Coins, Clock, Brain, File, Share2, Target, Settings } from 'lucide-react'
 import type { Agent, TaskEntry, ActivityEntry, DashboardStats } from './types/openclaw'
 import type { ServerEvent } from './types/ws'
+import type { CostStats } from './types/costs'
 
 // State
 interface State {
@@ -9,6 +11,7 @@ interface State {
   tasks: TaskEntry[]
   activity: ActivityEntry[]
   stats: DashboardStats
+  costs: CostStats | null
   connected: boolean
 }
 
@@ -23,6 +26,7 @@ const initialState: State = {
     totalTokensOut: 0,
     tasksCompleted24h: 0,
   },
+  costs: null,
   connected: false,
 }
 
@@ -32,6 +36,7 @@ type Action =
   | { type: 'TASK_UPDATE'; task: TaskEntry }
   | { type: 'ACTIVITY'; entry: ActivityEntry }
   | { type: 'STATS'; stats: DashboardStats }
+  | { type: 'COSTS'; costs: CostStats }
   | { type: 'CONNECTED' }
   | { type: 'DISCONNECTED' }
 
@@ -57,6 +62,8 @@ function reducer(state: State, action: Action): State {
       return { ...state, activity: [action.entry, ...state.activity].slice(0, 200) }
     case 'STATS':
       return { ...state, stats: action.stats }
+    case 'COSTS':
+      return { ...state, costs: action.costs }
     case 'CONNECTED':
       return { ...state, connected: true }
     case 'DISCONNECTED':
@@ -66,20 +73,18 @@ function reducer(state: State, action: Action): State {
   }
 }
 
-const StateContext = createContext<State>(initialState)
+export const StateContext = createContext<State>(initialState)
 const DispatchContext = createContext<React.Dispatch<Action>>(() => {})
 
 // WebSocket hook
 function useWebSocket() {
   const dispatch = useContext(DispatchContext)
-  const [ws, setWs] = useState<WebSocket | null>(null)
 
   useEffect(() => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
     const wsUrl = `${protocol}//${window.location.host}/ws?token=change-me-in-production`
 
     const socket = new WebSocket(wsUrl)
-    setWs(socket)
 
     socket.onopen = () => {
       dispatch({ type: 'CONNECTED' })
@@ -88,7 +93,7 @@ function useWebSocket() {
 
     socket.onmessage = (event) => {
       try {
-        const msg: ServerEvent = JSON.parse(event.data)
+        const msg = JSON.parse(event.data)
         switch (msg.type) {
           case 'snapshot':
             dispatch({ type: 'SNAPSHOT', agents: msg.agents, tasks: msg.tasks })
@@ -105,6 +110,9 @@ function useWebSocket() {
           case 'stats':
             dispatch({ type: 'STATS', stats: msg.stats })
             break
+          case 'costs:update':
+            dispatch({ type: 'COSTS', costs: msg.stats })
+            break
         }
       } catch (e) {
         console.error('[WS] Parse error:', e)
@@ -116,30 +124,31 @@ function useWebSocket() {
       console.log('[WS] Disconnected')
     }
 
-    socket.onerror = (e) => {
-      console.error('[WS] Error:', e)
-    }
-
     return () => socket.close()
   }, [dispatch])
-
-  return ws
 }
 
 // Components
 function Sidebar({ active, onNavigate }: { active: string; onNavigate: (v: string) => void }) {
   const navItems = [
-    { id: 'overview', label: 'Overview', icon: '📊' },
-    { id: 'agents', label: 'Agents', icon: '🤖' },
-    { id: 'tasks', label: 'Tasks', icon: '📋' },
-    { id: 'activity', label: 'Activity', icon: '📜' },
-    { id: 'office', label: '2D Office', icon: '🏢' },
+    { id: 'overview', label: 'Overview', Icon: LayoutDashboard },
+    { id: 'agents', label: 'Agents', Icon: Bot },
+    { id: 'tasks', label: 'Tasks', Icon: ListTodo },
+    { id: 'activity', label: 'Activity', Icon: FileText },
+    { id: 'office', label: '2D Office', Icon: Building2 },
+    { id: 'costs', label: 'Costs', Icon: Coins },
+    { id: 'crons', label: 'Crons', Icon: Clock },
+    { id: 'memory', label: 'Memory', Icon: Brain },
+    { id: 'docs', label: 'Docs', Icon: File },
+    { id: 'social', label: 'Social', Icon: Share2 },
+    { id: 'leads', label: 'Leads', Icon: Target },
+    { id: 'settings', label: 'Settings', Icon: Settings },
   ]
 
   return (
     <div className="sidebar">
       <div className="sidebar-header">
-        <h1>Mission Control</h1>
+        <h1>Dashboard Express</h1>
       </div>
       <nav className="sidebar-nav">
         {navItems.map((item) => (
@@ -148,7 +157,7 @@ function Sidebar({ active, onNavigate }: { active: string; onNavigate: (v: strin
             className={`nav-item ${active === item.id ? 'active' : ''}`}
             onClick={() => onNavigate(item.id)}
           >
-            <span className="nav-icon">{item.icon}</span>
+            <item.Icon className="nav-icon" size={20} />
             <span>{item.label}</span>
           </div>
         ))}
@@ -200,8 +209,6 @@ function Overview() {
 function CostTracker() {
   const state = useContext(StateContext)
   const total = state.stats.totalTokensIn + state.stats.totalTokensOut
-
-  // Simple SVG chart
   const inPct = total > 0 ? (state.stats.totalTokensIn / total) * 100 : 50
   const outPct = total > 0 ? (state.stats.totalTokensOut / total) * 100 : 50
 
@@ -328,22 +335,30 @@ function ActivityFeed() {
   )
 }
 
-import { Office3D } from './components/Office3D'
+// Lazy load components
+const Office3D = React.lazy(() => import('./components/Office3D').then(m => ({ default: m.Office3D })))
+const Costs = React.lazy(() => import('./components/Costs').then(m => ({ default: m.Costs })))
+const Crons = React.lazy(() => import('./components/Crons').then(m => ({ default: m.Crons })))
+const Memory = React.lazy(() => import('./components/Memory').then(m => ({ default: m.Memory })))
+const Docs = React.lazy(() => import('./components/Docs').then(m => ({ default: m.Docs })))
+const Social = React.lazy(() => import('./components/Social').then(m => ({ default: m.Social })))
+const Leads = React.lazy(() => import('./components/Leads').then(m => ({ default: m.Leads })))
+const Settings = React.lazy(() => import('./components/Settings').then(m => ({ default: m.Settings })))
 
 function Office() {
   const state = useContext(StateContext)
-
   return (
     <div>
       <h2 className="section-title">Office</h2>
-      <Office3D agents={state.agents} />
+      <React.Suspense fallback={<div className="loading">Loading...</div>}>
+        <Office3D agents={state.agents} />
+      </React.Suspense>
     </div>
   )
 }
 
 function Dashboard() {
   const [active, setActive] = useState('overview')
-
   useWebSocket()
 
   return (
@@ -356,6 +371,13 @@ function Dashboard() {
         {active === 'tasks' && <TaskBoard />}
         {active === 'activity' && <ActivityFeed />}
         {active === 'office' && <Office />}
+        {active === 'costs' && <React.Suspense fallback={<div className="loading">Loading...</div>}><Costs /></React.Suspense>}
+        {active === 'crons' && <React.Suspense fallback={<div className="loading">Loading...</div>}><Crons /></React.Suspense>}
+        {active === 'memory' && <React.Suspense fallback={<div className="loading">Loading...</div>}><Memory /></React.Suspense>}
+        {active === 'docs' && <React.Suspense fallback={<div className="loading">Loading...</div>}><Docs /></React.Suspense>}
+        {active === 'social' && <React.Suspense fallback={<div className="loading">Loading...</div>}><Social /></React.Suspense>}
+        {active === 'leads' && <React.Suspense fallback={<div className="loading">Loading...</div>}><Leads /></React.Suspense>}
+        {active === 'settings' && <React.Suspense fallback={<div className="loading">Loading...</div>}><Settings /></React.Suspense>}
       </main>
     </>
   )
