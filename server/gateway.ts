@@ -44,16 +44,35 @@ function mapGatewayStatus(status: string): AgentStatus {
   return 'idle'
 }
 
+function inferStatus(session: any): AgentStatus {
+  if (session.status) return mapGatewayStatus(session.status)
+  // Infer from updatedAt: active in last 2 min = working, last 10 min = idle, else offline
+  const age = Date.now() - (session.updatedAt || 0)
+  if (age < 2 * 60 * 1000) return 'working'
+  if (age < 10 * 60 * 1000) return 'idle'
+  return 'offline'
+}
+
+function sessionDisplayName(session: any): string {
+  if (session.displayName) return session.displayName
+  if (session.label) return session.label
+  // Extract readable name from key like "agent:main:telegram:direct:123"
+  const key = session.key || session.id || 'Unknown'
+  const parts = key.split(':')
+  if (parts.length >= 3) return parts.slice(2).join(':')
+  return key
+}
+
 function convertSessionToAgent(session: any): Agent {
   return {
-    id: session.id || session.sessionId || 'unknown',
-    name: session.name || session.label || session.id || 'Unknown',
-    status: mapGatewayStatus(session.status || 'idle'),
-    currentTask: session.current_task || session.currentTask || null,
-    lastActive: session.last_active || session.lastActive || Date.now(),
+    id: session.sessionId || session.key || session.id || 'unknown',
+    name: sessionDisplayName(session),
+    status: inferStatus(session),
+    currentTask: session.current_task || session.currentTask || session.lastChannel || null,
+    lastActive: session.updatedAt || session.last_active || session.lastActive || Date.now(),
     tokenUsage: {
-      input: session.tokens_in || session.tokensIn || 0,
-      output: session.tokens_out || session.tokensOut || 0,
+      input: session.inputTokens || session.tokens_in || session.tokensIn || 0,
+      output: session.outputTokens || session.tokens_out || session.tokensOut || 0,
     },
   }
 }
@@ -227,9 +246,11 @@ function handleResponse(msg: any) {
   // sessions.list response
   if (payload?.sessions || Array.isArray(payload)) {
     const sessions = payload.sessions || payload
+    console.log(`[Gateway] Received ${sessions.length} sessions`)
     state.agents.clear()
     for (const session of sessions) {
       const agent = convertSessionToAgent(session)
+      console.log(`[Gateway]   Session: ${agent.name} (${agent.id}) - ${agent.status}`)
       state.agents.set(agent.id, agent)
     }
     updateStats()
