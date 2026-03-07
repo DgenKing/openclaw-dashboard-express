@@ -95,12 +95,16 @@ const server = Bun.serve({
     async open(ws) {
       ws.subscribe('dashboard')
       console.log(`[WS] Client connected`)
-      // Send initial snapshot
+      // Send initial snapshot + stats
       setTimeout(async () => {
-        const { getAgents, getTasks } = await import('./server/gateway')
+        const { getAgents, getTasks, getStats, getActivity } = await import('./server/gateway')
         const agents = getAgents()
         const tasks = getTasks()
+        const stats = getStats()
+        const activity = getActivity()
         ws.send(JSON.stringify({ type: 'snapshot', agents, tasks }))
+        ws.send(JSON.stringify({ type: 'stats', stats }))
+        ws.send(JSON.stringify({ type: 'activity_bulk', activity }))
       }, 100)
     },
 

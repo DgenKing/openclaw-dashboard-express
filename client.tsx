@@ -121,6 +121,13 @@ function useWebSocket() {
           case 'costs:update':
             dispatch({ type: 'COSTS', costs: msg.stats })
             break
+          case 'activity_bulk':
+            if (msg.activity) {
+              for (const entry of msg.activity) {
+                dispatch({ type: 'ACTIVITY', entry })
+              }
+            }
+            break
         }
       } catch (e) {
         console.error('[WS] Parse error:', e)
