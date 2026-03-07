@@ -1,7 +1,7 @@
-const token = process.env.OPENCLAW_TOKEN || ''
+const token = process.env.OPENCLAW_GATEWAY_TOKEN || process.env.OPENCLAW_TOKEN || ''
 
 if (!token) {
-  console.log('\n⚠️  No OPENCLAW_TOKEN set. Run with: OPENCLAW_TOKEN=your-token bun run dev')
+  console.log('\n⚠️  No gateway token set. Run with: OPENCLAW_GATEWAY_TOKEN=your-token bun run dev')
   console.log('   Connecting without authentication...\n')
 }
 

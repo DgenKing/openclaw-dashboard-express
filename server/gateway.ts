@@ -94,6 +94,15 @@ export function connect() {
   ws.onopen = () => {
     console.log('[Gateway] Connected')
     reconnectAttempts = 0
+
+    // Authenticate with OpenClaw gateway (connect.params.auth.token)
+    if (CONFIG.OPENCLAW_TOKEN) {
+      ws?.send(JSON.stringify({
+        type: 'connect',
+        params: { auth: { token: CONFIG.OPENCLAW_TOKEN } },
+      }))
+    }
+
     addActivity('system', 'Connected to OpenClaw Gateway')
     // Request initial data
     ws?.send(JSON.stringify({ type: 'sessions_list' }))

@@ -17,13 +17,13 @@ Dashboard runs at **http://localhost:3000**
 
 If OpenClaw is running on `ws://127.0.0.1:18789`, the dashboard connects automatically.
 
-To authenticate, pass your token as an environment variable:
+To authenticate, pass your gateway token as an environment variable:
 
 ```bash
-OPENCLAW_TOKEN=your-token bun run dev
+OPENCLAW_GATEWAY_TOKEN=your-token bun run dev
 ```
 
-Or you'll be prompted interactively when running in a terminal.
+The dashboard reads `OPENCLAW_GATEWAY_TOKEN` (same env var OpenClaw uses). If not set, it connects without auth.
 
 ## Without OpenClaw (Testing)
 
@@ -57,7 +57,7 @@ The mock gateway simulates live agent activity with status changes every 3-8 sec
 
 | Env Variable | Default | Description |
 |---|---|---|
-| `OPENCLAW_TOKEN` | *(empty)* | Auth token for OpenClaw gateway |
+| `OPENCLAW_GATEWAY_TOKEN` | *(empty)* | Auth token for OpenClaw gateway (same as OpenClaw's env var) |
 | `DASHBOARD_TOKEN` | `change-me-in-production` | Token for dashboard API/WebSocket auth |
 
 ## Requirements
