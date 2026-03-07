@@ -167,6 +167,8 @@ function handleEvent(msg: any) {
           platform: 'linux',
           mode: 'backend',
         },
+        role: 'operator',
+        scopes: ['operator.read', 'operator.write'],
         auth: { token: CONFIG.OPENCLAW_TOKEN || undefined },
       })
       break
