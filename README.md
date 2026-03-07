@@ -1,24 +1,33 @@
 # Dashboard Express
 
-Real-time monitoring dashboard for OpenClaw agent orchestration. Built with Bun, React 19, and TypeScript.
+Real-time monitoring dashboard for OpenClaw agent orchestration. Built with Bun, React 19, and TypeScript. Glassmorphism dark UI with Lucide icons.
 
 ## Quick Start
 
 ```bash
-# Clone and install
-git clone https://github.com/your-org/dashboard-express.git
-cd dashboard-express
+git clone <your-repo-url>
+cd openclaw-dashboard-express
 bun install
-
-# Start the dashboard
 bun run dev
 ```
 
 Dashboard runs at **http://localhost:3000**
 
+## Connecting to OpenClaw
+
+If OpenClaw is running on `ws://127.0.0.1:18789`, the dashboard connects automatically.
+
+To authenticate, pass your token as an environment variable:
+
+```bash
+OPENCLAW_TOKEN=your-token bun run dev
+```
+
+Or you'll be prompted interactively when running in a terminal.
+
 ## Without OpenClaw (Testing)
 
-Use the built-in mock gateway to test the dashboard without OpenClaw:
+Use the built-in mock gateway to test without OpenClaw installed:
 
 ```bash
 # Terminal 1: Start mock OpenClaw (simulates 8 agents)
@@ -30,21 +39,26 @@ bun run dev
 
 The mock gateway simulates live agent activity with status changes every 3-8 seconds.
 
-## With OpenClaw
-
-If OpenClaw is running on `ws://127.0.0.1:18789`, the dashboard will connect automatically.
-
 ## Features
 
-- Overview, Agents, Tasks, Activity
-- 2D Office visualization
-- Costs & Token tracking
-- Cron job scheduling
-- Agent memory browser
-- Docs viewer
-- Social media queue
-- Lead pipeline
-- Settings
+- **Overview** — agent stats, task board, activity feed
+- **Agents** — live status, token usage, search
+- **Tasks** — kanban board (queued, running, completed, failed)
+- **2D Office** — pixel art visualization of agents at workstations, scales to fill container
+- **Costs** — token tracking and spend monitoring
+- **Cron Jobs** — scheduled task management
+- **Memory** — agent memory browser
+- **Docs** — generated document viewer
+- **Social** — social media post queue
+- **Lead Pipeline** — CRM-style lead tracking with stages
+- **Settings** — gateway config, auth, alerts, thresholds
+
+## Configuration
+
+| Env Variable | Default | Description |
+|---|---|---|
+| `OPENCLAW_TOKEN` | *(empty)* | Auth token for OpenClaw gateway |
+| `DASHBOARD_TOKEN` | `change-me-in-production` | Token for dashboard API/WebSocket auth |
 
 ## Requirements
 
