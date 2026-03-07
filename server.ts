@@ -132,4 +132,4 @@ setServer(server)
 // Connect to OpenClaw Gateway
 connect()
 
-console.log(`🚀 Mission Control running at http://localhost:${CONFIG.PORT}`)
+console.log(`🚀 Dashboard Express running at http://localhost:${CONFIG.PORT}`)

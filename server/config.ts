@@ -8,24 +8,33 @@ async function promptForToken(): Promise<string> {
     return ''
   }
 
-  const readline = await import('readline')
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-  })
-
-  return new Promise<string>((resolve) => {
-    rl.question('\n🔑 Enter your OpenClaw auth token (press Enter to skip): ', (answer) => {
-      rl.close()
-      token = answer.trim()
-      resolve(token)
+  try {
+    const readline = await import('readline')
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout
     })
-  })
+
+    return await new Promise<string>((resolve) => {
+      rl.question('\n🔑 Enter your OpenClaw auth token (press Enter to skip): ', (answer) => {
+        rl.close()
+        token = answer.trim()
+        resolve(token)
+      })
+    })
+  } catch {
+    console.log('\n⚠️  Could not read from stdin. Set OPENCLAW_TOKEN env var: export OPENCLAW_TOKEN=your-token')
+    return ''
+  }
 }
 
 // Run prompt before server starts (only in interactive mode)
-if (process.stdin.isTTY) {
-  await promptForToken()
+try {
+  if (process.stdin.isTTY) {
+    await promptForToken()
+  }
+} catch {
+  console.log('⚠️  Stdin not available. Set OPENCLAW_TOKEN env var: export OPENCLAW_TOKEN=your-token')
 }
 
 export const CONFIG = {

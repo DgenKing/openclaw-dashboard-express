@@ -130,6 +130,19 @@ export function Office3D({ agents }: { agents: Agent[] }) {
   const displayAgents = agents.slice(0, 8)
   const [positions, setPositions] = useState<Map<string, SpritePos>>(new Map())
   const prevAgentsRef = useRef<Agent[]>([])
+  const wrapperRef = useRef<HTMLDivElement>(null)
+  const [scale, setScale] = useState(1)
+
+  useEffect(() => {
+    const el = wrapperRef.current
+    if (!el) return
+    const observer = new ResizeObserver((entries) => {
+      const width = entries[0].contentRect.width
+      setScale(width / 700)
+    })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
 
   useEffect(() => {
     setPositions(prev => {
@@ -221,7 +234,8 @@ export function Office3D({ agents }: { agents: Agent[] }) {
   }
 
   return (
-    <div className="pixel-office">
+    <div className="pixel-office-wrapper" ref={wrapperRef}>
+    <div className="pixel-office" style={{ transform: `scale(${scale})` }}>
       {/* Wall background */}
       <div className="office-wall">
         <div className="wall-stripe wall-stripe-1" />
@@ -323,6 +337,7 @@ export function Office3D({ agents }: { agents: Agent[] }) {
           </div>
         )
       })}
+    </div>
     </div>
   )
 }

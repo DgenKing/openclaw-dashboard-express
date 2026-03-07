@@ -525,6 +525,12 @@ body {
 /* ============================================================
    PIXEL ART OFFICE  —  DO NOT MODIFY
    ============================================================ */
+.pixel-office-wrapper {
+  width: 100%;
+  aspect-ratio: 700 / 480;
+  overflow: hidden;
+  border-radius: 4px;
+}
 .pixel-office {
   position: relative;
   width: 700px;
@@ -535,7 +541,7 @@ body {
   overflow: hidden;
   image-rendering: pixelated;
   font-family: 'Courier New', monospace;
-  margin: 0 auto;
+  transform-origin: top left;
 }
 
 /* Wall */
